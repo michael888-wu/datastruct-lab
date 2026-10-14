@@ -1,0 +1,47 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createEngine } from './createEngine'
+const steps = [0,1,2].map(value=>({state:{value},codeLines:[value+1],description:`帧 ${value}`}))
+afterEach(()=>vi.useRealTimers())
+describe('算法执行引擎',()=>{
+  it('单步与回退恢复完整状态及代码行，重置回到初始帧',()=>{
+    const engine=createEngine(steps)
+    engine.next(); engine.next()
+    expect(engine.getSnapshot().status).toBe('completed')
+    engine.previous()
+    expect(engine.getSnapshot().step).toEqual(steps[1])
+    engine.reset(); engine.previous()
+    expect(engine.getSnapshot()).toMatchObject({index:0,status:'paused'})
+    engine.dispose()
+  })
+  it('播放、暂停、调速与完成均正确管理计时器',()=>{
+    vi.useFakeTimers()
+    const engine=createEngine(steps)
+    engine.play(); engine.play()
+    expect(vi.getTimerCount()).toBe(1)
+    vi.advanceTimersByTime(900)
+    expect(engine.getSnapshot().index).toBe(1)
+    engine.pause(); vi.advanceTimersByTime(4000)
+    expect(engine.getSnapshot().index).toBe(1)
+    engine.setSpeed(2); engine.play(); vi.advanceTimersByTime(450)
+    expect(engine.getSnapshot().status).toBe('completed')
+    expect(vi.getTimerCount()).toBe(0)
+    engine.dispose()
+  })
+  it('取消订阅与销毁后不再通知，销毁清理计时器',()=>{
+    vi.useFakeTimers()
+    const engine=createEngine(steps), listener=vi.fn()
+    const unsubscribe=engine.subscribe(listener)
+    engine.next(); expect(listener).toHaveBeenCalledTimes(1)
+    unsubscribe(); engine.reset(); engine.play(); engine.dispose()
+    vi.runAllTimers(); expect(listener).toHaveBeenCalledTimes(1)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+  it('校验空序列与非法速度，输入修改不会污染快照',()=>{
+    expect(()=>createEngine([])).toThrow()
+    const input=structuredClone(steps), engine=createEngine(input)
+    input[0].state.value=99
+    expect(engine.getSnapshot().step.state.value).toBe(0)
+    for(const speed of [0,NaN,Infinity,5]) expect(()=>engine.setSpeed(speed)).toThrow(RangeError)
+    engine.dispose()
+  })
+})

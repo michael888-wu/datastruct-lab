@@ -1,0 +1,37 @@
+# DataStruct Lab 开发规范
+
+本项目面向中国计算机考研 408，界面和教学解释使用简体中文。
+
+## 当前阶段
+
+Phase 1：基础架构。八章导航已开放，绪论提供基础导读，正式算法均未上线。禁止将固定帧演示描述为正式算法；禁止以无功能按钮模拟完成状态。未经明确新需求，不扩展到全部算法或练习系统。
+
+## 架构边界
+
+- `src/engine/` 不依赖 React、DOM 或组件，负责步骤、快照、状态机与计时器。
+- 后续算法放在 `src/algorithms/<chapter>/`，实现 `AlgorithmDefinition<Input, State>`。输入验证与步骤生成由算法负责。
+- 步骤使用完整状态快照，代码行号从 1 开始；状态应视为不可变，禁止 UI 修改引擎快照。
+- UI 使用 `useSyncExternalStore` 订阅引擎。卸载时停止播放并清理订阅，替换独立引擎实例时调用 `dispose()`。
+- `src/data/chapters.ts` 是章节名称与导航的唯一来源。
+- 组件按职责拆分；类型使用 `import type`；严格 TypeScript，禁止随意使用 `any`。
+
+## 界面与持久化
+
+默认深色主题，以 CSS 变量维护深浅两套配色；使用 Lucide 图标、Motion 动画并尊重减少动态效果偏好。使用语义化 HTML、明确标签和可见键盘焦点，移动设备不得整页横向溢出。
+
+localStorage 键必须有明确范围；解析外部数据需校验并容错。存储不可用时仍可正常使用页面。主题使用 `datastruct-theme`，学习记录使用 `datastruct-learning-v1`。进度必须来自真实用户操作，尚未开发的章节标记“开发中”。
+
+## 验证
+
+使用 npm 与 package-lock.json。提交前执行：
+
+```sh
+npm install
+npm run lint
+npm run test
+npm run build
+```
+
+新增算法必须测试边界输入、步骤状态和复杂度语义；新增引擎行为测试暂停、回退、计时器及清理。UI 测试关注用户可观察行为，不照抄实现。阶段结束更新中文 README、路线图及验证结果；浏览器未验证时明确记录。
+
+不得提交 node_modules、dist、work、环境文件或密钥。不要覆盖用户已有工作，不自动推送或部署。

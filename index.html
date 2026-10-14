@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0d9488" />
+    <meta name="description" content="数据结构实验室：面向计算机专业与 CS 408 的数据结构可视化学习空间。" />
+    <title>数据结构实验室 · DataStruct Lab</title>
+    <script>
+      try {
+        const saved = localStorage.getItem('datastruct-theme');
+        const dark = saved !== 'light';
+        document.documentElement.classList.toggle('dark', dark);
+      } catch { document.documentElement.classList.add('dark'); }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
