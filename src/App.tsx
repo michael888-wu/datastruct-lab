@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import Home from './pages/Home'
 import Chapter from './pages/Chapter'
 import Visualizer from './pages/Visualizer'
+import SequentialListInsert from './pages/SequentialListInsert'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="visualizer/sequential-list-insert" element={<SequentialListInsert />} />
           <Route path="visualizer" element={<Visualizer />} />
           <Route path="chapters/:slug" element={<Chapter />} />
           <Route path="*" element={<NotFound />} />
