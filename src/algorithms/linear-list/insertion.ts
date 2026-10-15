@@ -1,21 +1,18 @@
 import type { AlgorithmDefinition, AlgorithmStep } from '../../engine/types'
 
-export const LIST_CAPACITY = 8
-const MIN_INT = -2147483648
-const MAX_INT = 2147483647
+import { LIST_CAPACITY, isListInteger, validateValues, parseInteger, parseValues } from './shared'
+import type { VisualElement } from './shared'
+export { LIST_CAPACITY } from './shared'
+export type { VisualElement } from './shared'
 export interface InsertionInput {
   readonly values: readonly number[]
   /** 408 位序：1 ≤ position ≤ length + 1。 */
   readonly position: number
   readonly value: number
 }
-export interface VisualElement {
-  readonly id: string
-  readonly value: number
-  readonly index: number
-}
 export type InsertionPhase = 'ready' | 'position' | 'capacity' | 'loop' | 'shift' | 'insert' | 'length' | 'done'
 export interface InsertionState {
+  readonly operation: 'insert'
   /** 真实 C 数组内存，复制时源槽仍保留旧值；null 表示未使用。 */
   readonly memory: readonly (number | null)[]
   /** 用稳定 ID 表示元素的逻辑位置，使重复数值也可独立动画。 */
@@ -28,26 +25,16 @@ export interface InsertionState {
   readonly moved: number
 }
 export function validateInsertion(input: InsertionInput): void {
-  const isInt = (value: number) => Number.isInteger(value) && value >= MIN_INT && value <= MAX_INT
-  if (input.values.length > LIST_CAPACITY) throw new RangeError(`数组最多 ${LIST_CAPACITY} 个元素。`)
-  if (![...input.values].every(isInt)) throw new RangeError('数组元素必须是 32 位有符号整数。')
-  if (!isInt(input.value)) throw new RangeError('插入数值必须是 32 位有符号整数。')
+  validateValues(input.values)
+  if (!isListInteger(input.value)) throw new RangeError('插入数值必须是 32 位有符号整数。')
   if (!Number.isInteger(input.position) || input.position < 1 || input.position > input.values.length + 1) {
     throw new RangeError(`插入位置必须是 1 到 ${input.values.length + 1} 之间的整数（位序从 1 开始）。`)
   }
   if (input.values.length === LIST_CAPACITY) throw new RangeError(`顺序表已满（容量 ${LIST_CAPACITY}），无法插入。`)
 }
-function parseInteger(text: string, name: string): number {
-  if (!/^[+-]?\d+$/.test(text.trim())) throw new RangeError(`${name}必须填写整数，不能留空或使用小数。`)
-  const value = Number(text.trim())
-  if (!Number.isInteger(value) || value < MIN_INT || value > MAX_INT) throw new RangeError(`${name}必须在 ${MIN_INT} 到 ${MAX_INT} 之间。`)
-  return value
-}
 export function parseInsertion(arrayText: string, positionText: string, valueText: string): InsertionInput {
-  const text = arrayText.trim().replaceAll('，', ',')
-  const tokens = text ? text.includes(',') ? text.split(',') : text.split(/\s+/) : []
   const input: InsertionInput = {
-    values: tokens.map(token => parseInteger(token, '数组元素')),
+    values: parseValues(arrayText),
     position: parseInteger(positionText, '插入位置'),
     value: parseInteger(valueText, '插入数值'),
   }
@@ -83,7 +70,7 @@ export const sequentialListInsertion: AlgorithmDefinition<InsertionInput, Insert
     let moved = 0
     const steps: AlgorithmStep<InsertionState>[] = []
     const push = (phase: InsertionPhase, codeLines: number[], description: string, j: number | null = null) => {
-      steps.push({ state: structuredClone({ memory, elements, length, position, value, j, phase, moved }), codeLines, description })
+      steps.push({ state: structuredClone({ operation: 'insert' as const, memory, elements, length, position, value, j, phase, moved }), codeLines, description })
     }
     push('ready', [8], `准备在第 ${position} 个位置插入 ${value}，对应数组下标 ${position - 1}。初始长度为 ${length}。`)
     push('position', [9], `检查位序：1 ≤ ${position} ≤ ${length + 1}，位置合法。位序从 1 开始，下标从 0 开始。`)
